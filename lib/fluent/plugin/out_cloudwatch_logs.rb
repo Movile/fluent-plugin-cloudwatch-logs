@@ -264,11 +264,11 @@ module Fluent::Plugin
           begin
             message = message.encode("UTF-8")
           rescue Encoding::UndefinedConversionError => _
-            begin
-              message = message.force_encoding("ISO-8859-1").encode("UTF-8")
-            rescue Encoding::UndefinedConversionError => _
+            # begin
+            #   message = message.force_encoding("ISO-8859-1").encode("UTF-8")
+            # rescue Encoding::UndefinedConversionError => _
               message = message.force_encoding("UTF-8")
-            end
+            # end
           end
 
           if message.strip.length > 0
