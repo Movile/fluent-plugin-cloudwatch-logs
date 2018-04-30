@@ -46,6 +46,7 @@ module Fluent::Plugin
     config_param :k8s_log_group_prefix, :string, :default => nil
     config_param :k8s_use_labels_for_log_group, :string, :default => nil
     config_param :k8s_use_pod_name_for_log_stream, :bool, :default => false
+    config_param :k8s_append_field_to_log_group, :bool, :default => false
 
     config_section :buffer do
       config_set_default :@type, DEFAULT_BUFFER_TYPE
@@ -190,6 +191,11 @@ module Fluent::Plugin
                    @log_stream_name
                  end
 
+        if @k8s_append_field_to_log_group
+          field_suffix = @message_keys.split(',').map {|k| record[k].to_s }.join('/')
+          stream = "#{stream}/#{field_suffix}" if field_suffix
+        end
+
         [group, stream]
       }.each {|group_stream, rs|
         group_name, stream_name = group_stream
@@ -253,6 +259,16 @@ module Fluent::Plugin
 
           if @max_message_length
             message = message.slice(0, @max_message_length)
+          end
+
+          begin
+            message = message.encode("UTF-8")
+          rescue Encoding::UndefinedConversionError => _
+            begin
+              message = message.force_encoding("ISO-8859-1").encode("UTF-8")
+            rescue Encoding::UndefinedConversionError => _
+              message = message.force_encoding("UTF-8")
+            end
           end
 
           if message.strip.length > 0
