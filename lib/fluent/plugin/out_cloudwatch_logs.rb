@@ -42,6 +42,11 @@ module Fluent::Plugin
     config_param :remove_retention_in_days, :bool, default: false
     config_param :json_handler, :enum, list: [:yajl, :json], :default => :json
 
+    # custom params - kubernetes support
+    config_param :k8s_log_group_prefix, :string, :default => nil
+    config_param :k8s_use_labels_for_log_group, :string, :default => nil
+    config_param :k8s_use_pod_name_for_log_stream, :bool, :default => false
+
     config_section :buffer do
       config_set_default :@type, DEFAULT_BUFFER_TYPE
     end
@@ -130,7 +135,34 @@ module Fluent::Plugin
           true
         end
       }.group_by {|tag, time, record|
+
+        k8s_group_label = nil
+        if @k8s_use_labels_for_log_group
+          @k8s_use_labels_for_log_group.split(',').each do |x|
+            k8s_group_label = record.dig("kubernetes", "labels", x)
+            break if k8s_group_label
+          end
+        end
+
+        k8s_pod_namespace = record.dig("kubernetes", "namespace_name")
+        k8s_pod_name = record.dig("kubernetes", "pod_name")
+        k8s_container_name = record.dig("kubernetes", "container_name")
+
+        k8s_group = if k8s_group_label
+                      if @k8s_log_group_prefix
+                        "/#{@k8s_log_group_prefix}/#{k8s_pod_namespace}/#{k8s_group_label}"
+                      else
+                        "/#{k8s_pod_namespace}/#{k8s_group_label}"
+                      end
+                    end
+
+        k8s_stream = if @k8s_use_pod_name_for_log_stream
+                       "#{k8s_pod_name}/#{k8s_container_name}"
+                     end
+
         group = case
+                when k8s_group
+                  k8s_group
                 when @use_tag_as_group
                   tag
                 when @log_group_name_key
@@ -144,6 +176,8 @@ module Fluent::Plugin
                 end
 
         stream = case
+                 when k8s_stream
+                   k8s_stream
                  when @use_tag_as_stream
                    tag
                  when @log_stream_name_key
