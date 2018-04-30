@@ -192,7 +192,7 @@ module Fluent::Plugin
                  end
 
         if @k8s_append_field_to_log_group
-          field_suffix = @message_keys.split(',').map {|k| record[k].to_s }.join('/')
+          field_suffix = @k8s_append_field_to_log_group.split(',').map {|k| record[k].to_s }.join('/')
           stream = "#{stream}/#{field_suffix}" if field_suffix
         end
 
