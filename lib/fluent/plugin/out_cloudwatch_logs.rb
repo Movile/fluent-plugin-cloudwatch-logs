@@ -255,7 +255,11 @@ module Fluent::Plugin
             message = message.slice(0, @max_message_length)
           end
 
-          events << {timestamp: time_ms, message: message}
+          if message.strip.length > 0
+            events << {timestamp: time_ms, message: message}
+          else
+            log.warn "empty message! original record: #{record}"
+          end
         end
         # The log events in the batch must be in chronological ordered by their timestamp.
         # http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
