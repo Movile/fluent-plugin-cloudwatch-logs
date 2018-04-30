@@ -46,7 +46,7 @@ module Fluent::Plugin
     config_param :k8s_log_group_prefix, :string, :default => nil
     config_param :k8s_use_labels_for_log_group, :string, :default => nil
     config_param :k8s_use_pod_name_for_log_stream, :bool, :default => false
-    config_param :k8s_append_field_to_log_group, :bool, :default => false
+    config_param :k8s_append_field_to_log_group, :string, :default => nil
 
     config_section :buffer do
       config_set_default :@type, DEFAULT_BUFFER_TYPE
